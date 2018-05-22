@@ -8,26 +8,17 @@ import pandas as pd
 import numpy as np
 import cv2
 
-IMG_BASE_DIR = "./data/random_sample/images/"
-CSV_FILE = "./data/random_sample/labels.csv"
+IMG_BASE_DIR = "./data/images/"
+TRAIN_CSV = "./data/train_labels.csv"
+VALIDATION_CSV = "./data/validation_labels.csv"
+TEST_CSV = "./data/test_labels.csv"
 IMG_RESIZE = 256
-k = 3
 
-def read_data():
-	df = pd.read_csv(CSV_FILE, ",")
-	df['Image Path'] = IMG_BASE_DIR  + df["Image Index"] 
-	# for each image keep: 1) its path, 2) its labels
-	df = df.filter(items=["Image Path", "Finding Labels"])
-	# keep images that have only one label
-	df = df[~df["Finding Labels"].str.contains("No Finding")]
-	df = df[~df["Finding Labels"].str.contains("\W")]
-	# keep images of top-k labels
-	topk_labels = list(df["Finding Labels"].value_counts().nlargest(k).index)
-	df = df[df["Finding Labels"].isin(topk_labels)]
-	# create training  and validation sets
-	df = df.sample(frac=1)
-	df_train = df.head(700)
-	df_validation = df.tail(198)
+def read_train_validation_data():
+	df_train = pd.read_csv(TRAIN_CSV, ",")
+	df_train['Image Path'] = IMG_BASE_DIR  + df_train["Image Index"]
+	df_validation = pd.read_csv(VALIDATION_CSV, ",")
+	df_validation['Image Path'] = IMG_BASE_DIR  + df_validation["Image Index"]
 
 	train_imgs = [] 
 	train_labels = []
@@ -45,4 +36,18 @@ def read_data():
 
 	return np.float32(np.array(train_imgs)), np.int32(train_labels_np), np.float32(np.array(validation_imgs)), np.int32(validation_labels_np)
 
-read_data()
+def read_test_data():
+	df_test = pd.read_csv(TEST_CSV, ",")
+	df_test['Image Path'] = IMG_BASE_DIR  + df_test["Image Index"]
+
+	test_imgs = [] 
+	test_labels = []
+	for index, row in df_test.iterrows():
+		test_imgs.append(cv2.resize(cv2.imread(row["Image Path"], cv2.IMREAD_GRAYSCALE), (IMG_RESIZE, IMG_RESIZE)))
+		test_labels.append(row["Finding Labels"])
+	# transform labels from strings to integers using numpy
+	_, test_labels_np = np.unique(np.array(test_labels), return_inverse=True)
+	return np.float32(np.array(test_imgs)), np.int32(test_labels_np)
+
+#read_test_data()
+#train_validation_data()

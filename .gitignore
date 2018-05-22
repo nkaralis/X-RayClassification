@@ -1,3 +1,6 @@
+/models
 /data
 /MNIST-data
 *.pyc
+calcPrecRecall.py
+predictions.txt
